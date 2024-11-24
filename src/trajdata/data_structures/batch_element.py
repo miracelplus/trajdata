@@ -149,13 +149,15 @@ class AgentBatchElement:
         if map_api is not None:
             self.vec_map = map_api.get_map(
                 map_name,
-                self.cache
-                if self.cache.is_traffic_light_data_cached(
-                    # Is the original dt cached? If so, we can continue by
-                    # interpolating time to get whatever the user desires.
-                    self.cache.scene.env_metadata.dt
-                )
-                else None,
+                (
+                    self.cache
+                    if self.cache.is_traffic_light_data_cached(
+                        # Is the original dt cached? If so, we can continue by
+                        # interpolating time to get whatever the user desires.
+                        self.cache.scene.env_metadata.dt
+                    )
+                    else None
+                ),
                 **vector_map_params if vector_map_params is not None else None,
             )
 
@@ -341,6 +343,9 @@ class SceneBatchElement:
         self.data_index = data_index
         self.dt: float = scene_time.scene.dt
         self.scene_ts: int = scene_time.ts
+        # Calculate history and future lengths based on seconds and dt
+        self.history_len = int(history_sec[0] / self.dt)
+        self.future_len = int(future_sec[0] / self.dt)
 
         if max_agent_num is not None:
             scene_time.agents = scene_time.agents[:max_agent_num]

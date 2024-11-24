@@ -157,9 +157,9 @@ class UnifiedDataset(Dataset):
             rank (int, optional): Proccess rank when using torch DistributedDataParallel for multi-GPU training. Only the rank 0 process will be used for caching.
         """
         self.desired_data: List[str] = desired_data
-        self.scene_description_contains: Optional[
-            List[str]
-        ] = scene_description_contains
+        self.scene_description_contains: Optional[List[str]] = (
+            scene_description_contains
+        )
         self.centric: str = centric
         self.desired_dt: float = desired_dt
 
@@ -328,9 +328,9 @@ class UnifiedDataset(Dataset):
                         ):
                             distributed.barrier()
 
-                    scenes_list: List[
-                        SceneMetadata
-                    ] = self._get_desired_scenes_from_env(matching_datasets, env)
+                    scenes_list: List[SceneMetadata] = (
+                        self._get_desired_scenes_from_env(matching_datasets, env)
+                    )
 
                 if self.incl_vector_map and env.metadata.map_locations is not None:
                     # env.metadata.map_locations can be none for map-containing
@@ -451,23 +451,31 @@ class UnifiedDataset(Dataset):
         # and hashed together here.
         impactful_args: Dict[str, Any] = {
             "desired_data": tuple(self.desired_data),
-            "scene_description_contains": tuple(self.scene_description_contains)
-            if self.scene_description_contains is not None
-            else None,
+            "scene_description_contains": (
+                tuple(self.scene_description_contains)
+                if self.scene_description_contains is not None
+                else None
+            ),
             "centric": self.centric,
             "desired_dt": self.desired_dt,
             "history_sec": self.history_sec,
             "future_sec": self.future_sec,
             "incl_robot_future": self.incl_robot_future,
-            "only_types": tuple(t.name for t in self.only_types)
-            if self.only_types is not None
-            else None,
-            "only_predict": tuple(t.name for t in self.only_predict)
-            if self.only_predict is not None
-            else None,
-            "no_types": tuple(t.name for t in self.no_types)
-            if self.no_types is not None
-            else None,
+            "only_types": (
+                tuple(t.name for t in self.only_types)
+                if self.only_types is not None
+                else None
+            ),
+            "only_predict": (
+                tuple(t.name for t in self.only_predict)
+                if self.only_predict is not None
+                else None
+            ),
+            "no_types": (
+                tuple(t.name for t in self.no_types)
+                if self.no_types is not None
+                else None
+            ),
             "ego_only": self.ego_only,
         }
         index_hash: str = py_utils.hash_dict(impactful_args)
@@ -653,9 +661,7 @@ class UnifiedDataset(Dataset):
             f"Kept {self._data_len}/{old_len} elements, {self._data_len/old_len*100.0:.2f}%."
         )
 
-    def _get_data_index(
-        self, num_workers: int, scene_paths: List[Path]
-    ) -> Union[
+    def _get_data_index(self, num_workers: int, scene_paths: List[Path]) -> Union[
         List[Tuple[str, int, np.ndarray]],
         List[Tuple[str, int, List[Tuple[str, np.ndarray]]]],
     ]:
@@ -1068,6 +1074,7 @@ class UnifiedDataset(Dataset):
             self.cache_path, scene, self.augmentations
         )
         scene_cache.set_obs_format(self.obs_format)
+        scene_cache.get_traffic_light_status_dict()
 
         if self.centric == "scene":
             scene_time: SceneTime = SceneTime.from_cache(
