@@ -279,14 +279,15 @@ def main():
     """Main function to run the conversion process."""
     # Create UnifiedDataset
     dataset = UnifiedDataset(
-        desired_data=["nuplan_mini"],  # or other datasets
+        desired_data=["waymo_val"],  # or other datasets
         data_dirs={  # Remember to change this to match your filesystem!
             "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",
+            "waymo_val": "/home/haoweis/trajdata_smart/trajdata/data/waymo/",
         },
         centric="scene",
         desired_dt=0.1,
-        history_sec=(1.1, 1.1),  # 11 frames of history
-        future_sec=(8.0, 8.0),  # 80 frames of future
+        # history_sec=(1.0, 1.0),  # 10 frames of history
+        # future_sec=(8.0, 8.0),  # 80 frames of future
         only_predict=[AgentType.VEHICLE],
         state_format="x,y,z,xd,yd,h",
         obs_format="x,y,z,xd,yd,s,c",
