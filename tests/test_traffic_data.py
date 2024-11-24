@@ -8,7 +8,7 @@ class TestTrafficLightData(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         kwargs = {
-            "desired_data": ["nuplan_mini-mini_val"],
+            "desired_data": ["nuplan_mini"],
             "centric": "scene",
             "history_sec": (3.2, 3.2),
             "future_sec": (4.8, 4.8),
@@ -20,10 +20,10 @@ class TestTrafficLightData(unittest.TestCase):
                 "map_size_px": 224,
                 "offset_frac_xy": (-0.5, 0.0),
             },
-            "num_workers": 64,
+            "num_workers": 12,
             "verbose": True,
             "data_dirs": {  # Remember to change this to match your filesystem!
-                "nuplan_mini": "~/datasets/nuplan/dataset/nuplan-v1.1",
+                "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",
             },
         }
 

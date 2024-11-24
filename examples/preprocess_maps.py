@@ -5,12 +5,11 @@ from trajdata import UnifiedDataset
 def main():
     dataset = UnifiedDataset(
         # TODO(bivanovic@nvidia.com) Remove lyft from default examples
-        desired_data=["nusc_mini", "lyft_sample", "nuplan_mini"],
+        desired_data=["nuplan_mini"],
+        desired_dt=0.1,
         rebuild_maps=True,
         data_dirs={  # Remember to change this to match your filesystem!
-            "nusc_mini": "~/datasets/nuScenes",
-            "lyft_sample": "~/datasets/lyft/scenes/sample.zarr",
-            "nuplan_mini": "~/datasets/nuplan/dataset/nuplan-v1.1",
+            "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",
         },
         verbose=True,
     )

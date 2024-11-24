@@ -13,7 +13,7 @@ from trajdata.visualization.vis import plot_agent_batch
 
 def main():
     dataset = UnifiedDataset(
-        desired_data=["nusc_mini"],
+        desired_data=["nuplan_mini"],
         only_types=[AgentType.VEHICLE],
         agent_interaction_distances=defaultdict(lambda: 50.0),
         # incl_map=True,
@@ -25,15 +25,15 @@ def main():
         verbose=True,
         # desired_dt=0.1,
         num_workers=4,
-        data_dirs={  # Remember to change this to match your filesystem!
-            "nusc_mini": "~/datasets/nuScenes",
+        data_dirs={  # Updated to match demo.py
+            "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",  # Changed path
         },
     )
 
     ade = sim_metrics.ADE()
     fde = sim_metrics.FDE()
 
-    sim_env_name = "nusc_mini_sim"
+    sim_env_name = "nuplan_mini_sim"
     all_sim_scenes: List[Scene] = list()
     desired_scene: Scene
     for idx, desired_scene in enumerate(dataset.scenes()):
@@ -83,9 +83,9 @@ def main():
             metrics: Dict[str, Dict[str, float]] = sim_scene.get_metrics([ade, fde])
             print(metrics)
 
-        stats: Dict[
-            str, Dict[str, Tuple[np.ndarray, np.ndarray]]
-        ] = sim_scene.get_stats([vel_hist, lon_acc_hist, lat_acc_hist, jerk_hist])
+        stats: Dict[str, Dict[str, Tuple[np.ndarray, np.ndarray]]] = (
+            sim_scene.get_stats([vel_hist, lon_acc_hist, lat_acc_hist, jerk_hist])
+        )
         sim_vis.plot_sim_stats(stats)
 
         plot_agent_batch(obs, 0, show=False, close=False)

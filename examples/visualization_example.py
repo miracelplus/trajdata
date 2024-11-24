@@ -14,7 +14,7 @@ from trajdata.visualization.vis import plot_agent_batch
 
 def main():
     dataset = UnifiedDataset(
-        desired_data=["nusc_mini"],
+        desired_data=["nuplan_mini"],
         centric="agent",
         desired_dt=0.1,
         # history_sec=(3.2, 3.2),
@@ -33,9 +33,7 @@ def main():
         num_workers=4,
         verbose=True,
         data_dirs={  # Remember to change this to match your filesystem!
-            "nusc_mini": "~/datasets/nuScenes",
-            "lyft_sample": "~/datasets/lyft/scenes/sample.zarr",
-            "nuplan_mini": "~/datasets/nuplan/dataset/nuplan-v1.1",
+            "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",
         },
     )
 

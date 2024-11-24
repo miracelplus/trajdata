@@ -12,8 +12,8 @@ def main():
     noise_hists = NoiseHistories()
 
     dataset = UnifiedDataset(
-        desired_data=["nusc_mini-mini_train"],
-        centric="agent",
+        desired_data=["nuplan_mini"],
+        centric="scene",
         desired_dt=0.1,
         history_sec=(3.2, 3.2),
         future_sec=(4.8, 4.8),
@@ -30,7 +30,7 @@ def main():
         num_workers=0,
         verbose=True,
         data_dirs={  # Remember to change this to match your filesystem!
-            "nusc_mini": "~/datasets/nuScenes",
+            "nuplan": "/home/haoweis/trajdata/data/nuplan",
         },
     )
 
