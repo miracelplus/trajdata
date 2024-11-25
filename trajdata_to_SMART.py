@@ -162,13 +162,23 @@ def process_map_features(batch, dim: int = 3) -> Dict[str, Any]:
             # Get traffic light status if available
             light_state = 3  # Default UNKNOWN state
             if vector_map.traffic_light_status:
-                # Check all traffic light indices for this lane
-                for tl_index in range(len(lane.traffic_light_ids)):
-                    if (lane_id, tl_index) in vector_map.traffic_light_status:
-                        light_state = vector_map.traffic_light_status[
-                            (lane_id, tl_index)
-                        ].value
-                        break  # Use the first valid traffic light state we find
+                # Method 1: Get all timesteps for this specific lane_id
+                timesteps = set(
+                    ts
+                    for lid, ts in vector_map.traffic_light_status.keys()
+                    if lid == lane_id
+                )
+                if timesteps:
+                    # If timesteps found, use the first state
+                    ts = min(timesteps)  # or use next(iter(timesteps))
+                    light_state = vector_map.traffic_light_status[(lane_id, ts)].value
+
+                # Method 2: Get all possible timestep range (alternative approach)
+                # max_ts = max(ts for _, ts in vector_map.traffic_light_status.keys())
+                # for ts_idx in range(max_ts + 1):
+                #     if (lane_id, ts_idx) in vector_map.traffic_light_status:
+                #         light_state = vector_map.traffic_light_status[(lane_id, ts_idx)].value
+                #         break
 
             polygon_light_types.append(light_state)
 

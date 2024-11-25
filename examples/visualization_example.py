@@ -14,7 +14,7 @@ from trajdata.visualization.vis import plot_agent_batch
 
 def main():
     dataset = UnifiedDataset(
-        desired_data=["nuplan_mini"],
+        desired_data=["waymo_val"],
         centric="agent",
         desired_dt=0.1,
         # history_sec=(3.2, 3.2),
@@ -26,14 +26,21 @@ def main():
         incl_robot_future=False,
         incl_raster_map=True,
         raster_map_params={
-            "px_per_m": 2,
-            "map_size_px": 224,
+            "px_per_m": 1,
+            "map_size_px": 100,
             "offset_frac_xy": (-0.5, 0.0),
         },
         num_workers=4,
         verbose=True,
+        incl_vector_map=True,
+        vector_map_params={
+            "incl_road_lanes": True,
+            "incl_road_areas": False,
+            "incl_ped_crosswalks": False,
+            "incl_ped_walkways": False,
+        },
         data_dirs={  # Remember to change this to match your filesystem!
-            "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",
+            "waymo_val": "/home/haoweis/trajdata_smart/trajdata/data/waymo/",
         },
     )
 

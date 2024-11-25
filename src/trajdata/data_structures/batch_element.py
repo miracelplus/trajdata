@@ -344,8 +344,8 @@ class SceneBatchElement:
         self.dt: float = scene_time.scene.dt
         self.scene_ts: int = scene_time.ts
         # Calculate history and future lengths based on seconds and dt
-        self.history_len = int(history_sec[0] / self.dt)
-        self.future_len = int(future_sec[0] / self.dt)
+        # self.history_len = int(history_sec[0] / self.dt)
+        # self.future_len = int(future_sec[0] / self.dt)
 
         if max_agent_num is not None:
             scene_time.agents = scene_time.agents[:max_agent_num]
