@@ -476,7 +476,8 @@ def translate_lane(
 ) -> Tuple[RoadLane, Optional[Dict[int, List[bytes]]]]:
     lane: waymo_map_pb2.LaneCenter = map_feature.lane
 
-    if lane.left_boundaries or lane.right_boundaries:
+    # if lane.left_boundaries or lane.right_boundaries:
+    if 0:
         # Waymo lane boundaries are... complicated. See
         # https://github.com/waymo-research/waymo-open-dataset/issues/389
         # for more information. For now, we split lanes into chunks which
@@ -487,9 +488,11 @@ def translate_lane(
         new_ids: List[bytes] = []
         for idx, (lane_center, left_edge, right_edge) in enumerate(lane_chunks):
             road_lane = RoadLane(
-                id=f"{map_feature.id}_{idx}"
-                if len(lane_chunks) > 1
-                else str(map_feature.id),
+                id=(
+                    f"{map_feature.id}_{idx}"
+                    if len(lane_chunks) > 1
+                    else str(map_feature.id)
+                ),
                 center=lane_center,
                 left_edge=left_edge,
                 right_edge=right_edge,
@@ -521,9 +524,13 @@ def translate_lane(
             return road_lanes, None
 
     else:
+        left_edge = None
+        right_edge = None
         road_lane = RoadLane(
             id=str(map_feature.id),
             center=Polyline(np.array([(pt.x, pt.y, pt.z) for pt in lane.polyline])),
+            left_edge=left_edge,
+            right_edge=right_edge,
         )
 
         road_lane.prev_lanes.update([str(eid) for eid in lane.entry_lanes])

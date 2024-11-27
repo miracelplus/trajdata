@@ -82,7 +82,7 @@ class UnifiedDataset(Dataset):
         no_types: Optional[List[AgentType]] = None,
         state_format: str = "x,y,xd,yd,xdd,ydd,h",
         obs_format: str = "x,y,xd,yd,xdd,ydd,s,c",
-        standardize_data: bool = True,
+        standardize_data: bool = False,
         standardize_derivatives: bool = False,
         augmentations: Optional[List[Augmentation]] = None,
         max_agent_num: Optional[int] = None,
@@ -1084,6 +1084,7 @@ class UnifiedDataset(Dataset):
                 only_types=self.only_types,
                 no_types=self.no_types,
             )
+            description: Optional[str] = scene.description
 
             batch_element: SceneBatchElement = SceneBatchElement(
                 scene_cache,
@@ -1101,6 +1102,7 @@ class UnifiedDataset(Dataset):
                 self.standardize_data,
                 self.standardize_derivatives,
                 self.max_agent_num,
+                description=description,
             )
         elif self.centric == "agent":
             scene_time_agent: SceneTimeAgent = SceneTimeAgent.from_cache(

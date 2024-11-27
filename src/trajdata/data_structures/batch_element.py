@@ -338,11 +338,13 @@ class SceneBatchElement:
         standardize_data: bool = False,
         standardize_derivatives: bool = False,
         max_agent_num: Optional[int] = None,
+        description: Optional[str] = None,
     ) -> None:
         self.cache: SceneCache = cache
         self.data_index = data_index
         self.dt: float = scene_time.scene.dt
         self.scene_ts: int = scene_time.ts
+        self.description: Optional[str] = description
         # Calculate history and future lengths based on seconds and dt
         # self.history_len = int(history_sec[0] / self.dt)
         # self.future_len = int(future_sec[0] / self.dt)

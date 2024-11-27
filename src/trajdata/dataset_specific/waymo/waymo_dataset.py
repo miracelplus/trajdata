@@ -167,6 +167,7 @@ class WaymoDataset(RawDataset):
     def get_agent_info(
         self, scene: Scene, cache_path: Path, cache_class: Type[SceneCache]
     ) -> Tuple[List[AgentMetadata], List[List[AgentMetadata]]]:
+        print(scene.raw_data_idx)
         agent_list: List[AgentMetadata] = []
         agent_presence: List[List[AgentMetadata]] = [
             [] for _ in range(scene.length_timesteps)
@@ -180,6 +181,7 @@ class WaymoDataset(RawDataset):
         for data in dataset:
             scenario.ParseFromString(bytearray(data.numpy()))
             break
+        # print(scenario.scenario_id)
 
         agent_ids = []
         # agent_ml_class = []
@@ -325,7 +327,7 @@ class WaymoDataset(RawDataset):
         )
         cache_class.save_traffic_light_data(tls_df, cache_path, scene)
 
-        return agent_list, agent_presence
+        return agent_list, agent_presence, scenario.scenario_id
 
     def cache_map(
         self,

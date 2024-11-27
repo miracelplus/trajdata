@@ -35,9 +35,9 @@ def main():
         incl_vector_map=True,
         vector_map_params={
             "incl_road_lanes": True,
-            "incl_road_areas": False,
-            "incl_ped_crosswalks": False,
-            "incl_ped_walkways": False,
+            "incl_road_areas": True,
+            "incl_ped_crosswalks": True,
+            "incl_ped_walkways": True,
         },
         data_dirs={  # Remember to change this to match your filesystem!
             "waymo_val": "/home/haoweis/trajdata_smart/trajdata/data/waymo/",
@@ -48,8 +48,8 @@ def main():
 
     dataloader = DataLoader(
         dataset,
-        batch_size=4,
-        shuffle=True,
+        batch_size=1,
+        shuffle=False,
         collate_fn=dataset.get_collate_fn(),
         num_workers=0,
     )

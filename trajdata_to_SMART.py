@@ -42,12 +42,12 @@ _point_types = [
     "CENTERLINE",
 ]
 
-
+_polygon_to_polygon_types = ["NONE", "PRED", "SUCC", "LEFT", "RIGHT"]
 # def process_agent_batch(batch: SceneBatch) -> Dict[str, Any]:
 
 
 def process_agent_batch(
-    batch: SceneBatch, hist_len: int = 12, fut_len: int = 80
+    batch: SceneBatch, hist_len: int = 11, fut_len: int = 80
 ) -> Dict[str, Any]:
     """Process agent data from TrajData SceneBatch to SMART format.
 
@@ -59,10 +59,10 @@ def process_agent_batch(
     Returns:
         Dictionary containing processed agent data in SMART format
     """
-    print("agent_hist shape:", batch.agent_hist.shape)
-    print("agent_fut shape:", batch.agent_fut.shape)
-    print("agent_hist_len:", batch.agent_hist_len)
-    print("agent_fut_len:", batch.agent_fut_len)
+    # print("agent_hist shape:", batch.agent_hist.shape)
+    # print("agent_fut shape:", batch.agent_fut.shape)
+    # print("agent_hist_len:", batch.agent_hist_len)
+    # print("agent_fut_len:", batch.agent_fut_len)
     num_agents = batch.num_agents  # tensor([29])
     total_steps = hist_len + fut_len  # 固定总时间步长
 
@@ -84,15 +84,15 @@ def process_agent_batch(
 
         # Fill history data
         if agent_hist_len > 0:
-            position[i, hist_len - agent_hist_len : hist_len] = batch.agent_hist[
-                0, i, -agent_hist_len:, :3
-            ]
-            heading[i, hist_len - agent_hist_len : hist_len] = batch.agent_hist[
-                0, i, -agent_hist_len:, 5
-            ]
-            velocity[i, hist_len - agent_hist_len : hist_len] = batch.agent_hist[
-                0, i, -agent_hist_len:, 2:5
-            ]
+            position[i, hist_len - agent_hist_len : hist_len] = (
+                batch.agent_hist.position3d[0, i, -agent_hist_len:]
+            )
+            heading[i, hist_len - agent_hist_len : hist_len] = batch.agent_hist.heading[
+                0, i, -agent_hist_len:
+            ].squeeze(-1)
+            velocity[i, hist_len - agent_hist_len : hist_len, :2] = (
+                batch.agent_hist.velocity[0, i, -agent_hist_len:, :2]
+            )  # leave the last dim vz to be 0
             shape[i, hist_len - agent_hist_len : hist_len] = batch.agent_hist_extent[
                 0, i, -agent_hist_len:
             ]
@@ -100,15 +100,15 @@ def process_agent_batch(
 
         # Fill future data
         if agent_fut_len > 0:
-            position[i, hist_len : hist_len + agent_fut_len] = batch.agent_fut[
-                0, i, :agent_fut_len, :3
-            ]
-            heading[i, hist_len : hist_len + agent_fut_len] = batch.agent_fut[
-                0, i, :agent_fut_len, 5
-            ]
-            velocity[i, hist_len : hist_len + agent_fut_len] = batch.agent_fut[
-                0, i, :agent_fut_len, 2:5
-            ]
+            position[i, hist_len : hist_len + agent_fut_len] = (
+                batch.agent_fut.position3d[0, i, :agent_fut_len]
+            )
+            heading[i, hist_len : hist_len + agent_fut_len] = batch.agent_fut.heading[
+                0, i, :agent_fut_len
+            ].squeeze(-1)
+            velocity[i, hist_len : hist_len + agent_fut_len, :2] = (
+                batch.agent_fut.velocity[0, i, :agent_fut_len, :2]
+            )  # leave the last dim vz to be 0
             shape[i, hist_len : hist_len + agent_fut_len] = batch.agent_fut_extent[
                 0, i, :agent_fut_len
             ]
@@ -132,17 +132,19 @@ def process_agent_batch(
     }
 
 
-def process_map_features(batch, dim: int = 3) -> Dict[str, Any]:
+def process_map_features(
+    batch, dim: int = 3, target_timestep: int = 11
+) -> Dict[str, Any]:
     """Process map features from TrajData batch to SMART format.
 
     Args:
         batch: TrajData batch containing map information
         dim: Spatial dimension of the data (default: 3)
+        target_timestep: Target timestep for traffic light status (default: 11)
 
     Returns:
         Dictionary containing processed map data in SMART format
     """
-    # Try to get vector map directly from batch
     vector_map = batch.vector_maps[0]
     if vector_map is None:
         return {}
@@ -151,111 +153,201 @@ def process_map_features(batch, dim: int = 3) -> Dict[str, Any]:
     all_polygons = []
     polygon_types = []
     polygon_light_types = []
+    point_positions = []
+    point_orientations = []
+    point_magnitudes = []
+    point_heights = []
+    point_types = []
+    polygon_ids = []
+    num_points = []
 
     # Process lanes
     if hasattr(vector_map, "lanes"):
         for lane_id, lane in vector_map.elements[MapElementType.ROAD_LANE].items():
-            points = lane.center.points
+            # Convert points to tensor
+            points = torch.from_numpy(lane.center.points[:, :dim]).float()
             all_polygons.append(points)
-            polygon_types.append(0)  # Assuming 0 for lanes
+            polygon_types.append(0)  # Vehicle lane type
+            polygon_ids.append(lane_id)
+            num_points.append(len(points))
 
-            # Get traffic light status if available
+            # Get traffic light status at target timestep
             light_state = 3  # Default UNKNOWN state
             if vector_map.traffic_light_status:
-                # Method 1: Get all timesteps for this specific lane_id
-                timesteps = set(
-                    ts
-                    for lid, ts in vector_map.traffic_light_status.keys()
-                    if lid == lane_id
-                )
-                if timesteps:
-                    # If timesteps found, use the first state
-                    ts = min(timesteps)  # or use next(iter(timesteps))
-                    light_state = vector_map.traffic_light_status[(lane_id, ts)].value
-
-                # Method 2: Get all possible timestep range (alternative approach)
-                # max_ts = max(ts for _, ts in vector_map.traffic_light_status.keys())
-                # for ts_idx in range(max_ts + 1):
-                #     if (lane_id, ts_idx) in vector_map.traffic_light_status:
-                #         light_state = vector_map.traffic_light_status[(lane_id, ts_idx)].value
-                #         break
-
+                if (lane_id, target_timestep) in vector_map.traffic_light_status:
+                    light_state = vector_map.traffic_light_status[
+                        (lane_id, target_timestep)
+                    ].value
             polygon_light_types.append(light_state)
 
-    # Process crosswalks
+            # Process points
+            point_positions.append(points[:-1])  # Exclude last point for vectors
+            vectors = points[1:] - points[:-1]  # Compute vectors between points
+
+            # Compute orientations from vectors
+            orientations = torch.atan2(vectors[:, 1], vectors[:, 0])
+            point_orientations.append(orientations)
+
+            # Compute magnitudes (length of x,y vectors)
+            magnitudes = torch.norm(vectors[:, :2], p=2, dim=1)
+            point_magnitudes.append(magnitudes)
+
+            # Get heights (z component of vectors)
+            if dim > 2:
+                heights = vectors[:, 2]
+                point_heights.append(heights)
+
+            # Set point type as CENTERLINE
+            point_types.append(
+                torch.full((len(vectors),), 2, dtype=torch.uint8)
+            )  # 2 for CENTERLINE
+
+    # Process crosswalks (similar to lanes)
     if (
         hasattr(vector_map, "elements")
         and MapElementType.PED_CROSSWALK in vector_map.elements
     ):
-        for crosswalk in vector_map.elements[MapElementType.PED_CROSSWALK].values():
-            points = crosswalk.polygon.points  # Should be Nx3 array
+        for crosswalk_id, crosswalk in vector_map.elements[
+            MapElementType.PED_CROSSWALK
+        ].items():
+            # Convert points to tensor
+            points = torch.from_numpy(crosswalk.polygon.points[:, :dim]).float()
             all_polygons.append(points)
-            polygon_types.append(1)  # Assuming 1 for crosswalks
-            polygon_light_types.append(3)  # Default no light
+            polygon_types.append(3)  # Pedestrian type
+            polygon_light_types.append(3)  # No light state for crosswalks
+            polygon_ids.append(crosswalk_id)
+            num_points.append(len(points))
 
-    # If no map elements found, return empty dict
-    if not all_polygons:
-        return {}
+            # Process points
+            point_positions.append(points[:-1])
+            vectors = points[1:] - points[:-1]
+
+            orientations = torch.atan2(vectors[:, 1], vectors[:, 0])
+            point_orientations.append(orientations)
+
+            magnitudes = torch.norm(vectors[:, :2], p=2, dim=1)
+            point_magnitudes.append(magnitudes)
+
+            if dim > 2:
+                heights = vectors[:, 2]
+                point_heights.append(heights)
+
+            point_types.append(
+                torch.full((len(vectors),), 16, dtype=torch.uint8)
+            )  # 16 for CROSSWALK
 
     # Convert lists to tensors
-    num_elements = len(all_polygons)
-    polygon_type = torch.tensor(polygon_types, dtype=torch.uint8)
-    polygon_light_type = torch.tensor(polygon_light_types, dtype=torch.uint8)
+    num_polygons = len(all_polygons)
+    num_points = torch.tensor(num_points, dtype=torch.long)
 
-    # Create map point features from all polygon points
-    all_points = torch.cat([torch.tensor(poly) for poly in all_polygons], dim=0)
+    # Create point_to_polygon_edge_index
+    point_to_polygon_edge_index = torch.stack(
+        [
+            torch.arange(num_points.sum(), dtype=torch.long),
+            torch.arange(num_polygons, dtype=torch.long).repeat_interleave(num_points),
+        ],
+        dim=0,
+    )
 
-    return {
+    # Create polygon_to_polygon_edge_index and polygon_to_polygon_type
+    polygon_to_polygon_edge_index = []
+    polygon_to_polygon_type = []
+
+    # Process lane connections
+    for lane_id, lane in vector_map.elements[MapElementType.ROAD_LANE].items():
+        lane_idx = polygon_ids.index(lane_id)
+
+        # Process predecessors
+        for pred in lane.prev_lanes:
+            pred_idx = safe_list_index(polygon_ids, pred)
+            if pred_idx is not None:
+                polygon_to_polygon_edge_index.append(
+                    torch.tensor([[pred_idx], [lane_idx]], dtype=torch.long)
+                )
+                polygon_to_polygon_type.append(
+                    torch.tensor(
+                        [_polygon_to_polygon_types.index("PRED")], dtype=torch.uint8
+                    )
+                )
+
+        # Process successors
+        for succ in lane.next_lanes:
+            succ_idx = safe_list_index(polygon_ids, succ)
+            if succ_idx is not None:
+                polygon_to_polygon_edge_index.append(
+                    torch.tensor([[lane_idx], [succ_idx]], dtype=torch.long)
+                )
+                polygon_to_polygon_type.append(
+                    torch.tensor(
+                        [_polygon_to_polygon_types.index("SUCC")], dtype=torch.uint8
+                    )
+                )
+
+        # Process left neighbors
+        for left in lane.adj_lanes_left:
+            left_idx = safe_list_index(polygon_ids, left)
+            if left_idx is not None:
+                polygon_to_polygon_edge_index.append(
+                    torch.tensor([[lane_idx], [left_idx]], dtype=torch.long)
+                )
+                polygon_to_polygon_type.append(
+                    torch.tensor(
+                        [_polygon_to_polygon_types.index("LEFT")], dtype=torch.uint8
+                    )
+                )
+
+        # Process right neighbors
+        for right in lane.adj_lanes_right:
+            right_idx = safe_list_index(polygon_ids, right)
+            if right_idx is not None:
+                polygon_to_polygon_edge_index.append(
+                    torch.tensor([[lane_idx], [right_idx]], dtype=torch.long)
+                )
+                polygon_to_polygon_type.append(
+                    torch.tensor(
+                        [_polygon_to_polygon_types.index("RIGHT")], dtype=torch.uint8
+                    )
+                )
+
+    # Concatenate edge indices and types
+    if polygon_to_polygon_edge_index:
+        polygon_to_polygon_edge_index = torch.cat(polygon_to_polygon_edge_index, dim=1)
+        polygon_to_polygon_type = torch.cat(polygon_to_polygon_type, dim=0)
+    else:
+        polygon_to_polygon_edge_index = torch.empty((2, 0), dtype=torch.long)
+        polygon_to_polygon_type = torch.empty(0, dtype=torch.uint8)
+
+    map_data = {
         "map_polygon": {
-            "num_nodes": num_elements,
-            "type": polygon_type,
-            "light_type": polygon_light_type,
+            "num_nodes": len(all_polygons),
+            "type": torch.tensor(polygon_types, dtype=torch.uint8),
+            "light_type": torch.tensor(polygon_light_types, dtype=torch.uint8),
         },
         "map_point": {
-            "num_nodes": len(all_points),
-            "position": all_points,
-            "orientation": compute_point_orientations(
-                all_points
-            ),  # Need to implement this
-            "magnitude": torch.ones(len(all_points)) * 0.5,  # Default magnitude
-            "height": torch.zeros(len(all_points)),  # Default height
-            "type": torch.full(
-                (len(all_points),), 2, dtype=torch.uint8
-            ),  # Default type
+            "num_nodes": sum(len(p) for p in point_positions),
+            "position": torch.cat(point_positions, dim=0),
+            "orientation": torch.cat(point_orientations, dim=0),
+            "magnitude": torch.cat(point_magnitudes, dim=0),
+            "type": torch.cat(point_types, dim=0),
+        },
+        ("map_point", "to", "map_polygon"): {"edge_index": point_to_polygon_edge_index},
+        ("map_polygon", "to", "map_polygon"): {
+            "edge_index": polygon_to_polygon_edge_index,
+            "type": polygon_to_polygon_type,
         },
     }
 
+    if dim > 2:
+        map_data["map_point"]["height"] = torch.cat(point_heights, dim=0)
 
-def compute_point_orientations(points: torch.Tensor) -> torch.Tensor:
-    """Compute orientation angles for each point based on its neighbors.
+    return map_data
 
-    Args:
-        points: Nx3 tensor of point coordinates
 
-    Returns:
-        N tensor of orientation angles in radians
-    """
-    # For each point except endpoints, compute angle between previous and next point
-    orientations = torch.zeros(len(points))
-
-    # For points with neighbors, compute orientation from vector between adjacent points
-    for i in range(1, len(points) - 1):
-        prev_pt = points[i - 1, :2]
-        next_pt = points[i + 1, :2]
-        vector = next_pt - prev_pt
-        angle = torch.atan2(vector[1], vector[0])
-        orientations[i] = angle
-
-    # For endpoints, use vector to/from neighbor
-    if len(points) > 1:
-        orientations[0] = torch.atan2(
-            points[1, 1] - points[0, 1], points[1, 0] - points[0, 0]
-        )
-        orientations[-1] = torch.atan2(
-            points[-1, 1] - points[-2, 1], points[-1, 0] - points[-2, 0]
-        )
-
-    return orientations
+def safe_list_index(lst, value):
+    try:
+        return lst.index(value)
+    except ValueError:
+        return None
 
 
 def convert_batch_to_smart(batch, output_dir: str):
@@ -265,21 +357,19 @@ def convert_batch_to_smart(batch, output_dir: str):
         batch: TrajData batch to convert
         output_dir: Directory to save the converted data
     """
-    # Process agent data
+    # Process data
     agent_data = process_agent_batch(batch)
-
-    # Process map data
     map_data = process_map_features(batch)
 
-    # Combine all data
+    # Combine data
     data = {
         "scenario_id": batch.scene_ids[0],
-        "city": "unknown",  # TrajData doesn't have city information
+        "city": "unknown",
         "agent": agent_data,
     }
     data.update(map_data)
 
-    # Save to pickle file
+    # Save with scenario_id as filename
     output_path = os.path.join(output_dir, f"{data['scenario_id']}.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(data, f)
@@ -296,10 +386,10 @@ def main():
         },
         centric="scene",
         desired_dt=0.1,
-        # history_sec=(1.0, 1.0),  # 10 frames of history
-        # future_sec=(8.0, 8.0),  # 80 frames of future
-        only_predict=[AgentType.VEHICLE],
-        state_format="x,y,z,xd,yd,h",
+        history_sec=(1.0, 1.0),  # 10 frames of history
+        future_sec=(8.0, 8.0),  # 80 frames of future
+        # only_predict=[AgentType.VEHICLE],
+        state_format="x,y,z,xd,yd,s,c",
         obs_format="x,y,z,xd,yd,s,c",
         incl_robot_future=False,
         incl_raster_map=False,

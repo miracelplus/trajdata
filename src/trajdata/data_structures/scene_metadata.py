@@ -48,9 +48,11 @@ class Scene:
         self,
         new_agents: List[AgentMetadata],
         new_agent_presence: List[List[AgentMetadata]],
+        new_description: Optional[str] = None,
     ) -> None:
         self.agents = new_agents
         self.agent_presence = new_agent_presence
+        self.description = new_description
 
     def to_metadata(self) -> SceneMetadata:
         return SceneMetadata(self.env_name, self.name, self.dt, self.raw_data_idx)

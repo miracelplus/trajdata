@@ -44,13 +44,13 @@ def get_agent_data(
 
     # Obtaining and caching the original scene data.
     scene: Scene = raw_dataset.get_scene(scene_info)
-    agent_list, agent_presence = raw_dataset.get_agent_info(
+    agent_list, agent_presence, description = raw_dataset.get_agent_info(
         scene, env_cache.path, cache_class
     )
     if agent_list is None and agent_presence is None:
         raise ValueError(f"Scene {scene_info.name} contains no agents!")
 
-    scene.update_agent_info(agent_list, agent_presence)
+    scene.update_agent_info(agent_list, agent_presence, description)
     env_cache.save_scene(scene)
 
     if scene_utils.enforce_desired_dt(scene, desired_dt, dry_run=True):
