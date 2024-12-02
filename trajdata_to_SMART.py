@@ -71,6 +71,7 @@ def process_agent_batch(
     heading = torch.zeros(num_agents, total_steps)
     velocity = torch.zeros(num_agents, total_steps, 3)
     shape = torch.zeros(num_agents, total_steps, 3)
+    category = torch.full((num_agents,), 3, dtype=torch.uint8)
 
     # Initialize masks
     valid_mask = torch.zeros(num_agents, total_steps, dtype=torch.bool)
@@ -124,7 +125,7 @@ def process_agent_batch(
         "predict_mask": predict_mask,
         "id": batch.agent_names[0],
         "type": batch.agent_type[0],
-        "category": batch.agent_type.clone(),
+        "category": category,
         "position": position,
         "heading": heading,
         "velocity": velocity,
@@ -169,7 +170,7 @@ def process_map_features(
             all_polygons.append(points)
             polygon_types.append(0)  # Vehicle lane type
             polygon_ids.append(lane_id)
-            num_points.append(len(points))
+            num_points.append(len(points) - 1)
 
             # Get traffic light status at target timestep
             light_state = 3  # Default UNKNOWN state
@@ -216,7 +217,7 @@ def process_map_features(
             polygon_types.append(3)  # Pedestrian type
             polygon_light_types.append(3)  # No light state for crosswalks
             polygon_ids.append(crosswalk_id)
-            num_points.append(len(points))
+            num_points.append(len(points) - 1)
 
             # Process points
             point_positions.append(points[:-1])
@@ -243,8 +244,10 @@ def process_map_features(
     # Create point_to_polygon_edge_index
     point_to_polygon_edge_index = torch.stack(
         [
-            torch.arange(num_points.sum(), dtype=torch.long),
-            torch.arange(num_polygons, dtype=torch.long).repeat_interleave(num_points),
+            torch.arange(sum(num_points), dtype=torch.long),
+            torch.arange(num_polygons, dtype=torch.long).repeat_interleave(
+                torch.tensor(num_points, dtype=torch.long)
+            ),
         ],
         dim=0,
     )
@@ -340,6 +343,97 @@ def process_map_features(
     if dim > 2:
         map_data["map_point"]["height"] = torch.cat(point_heights, dim=0)
 
+    # Plot all polygons for visualization
+    # import matplotlib.pyplot as plt
+
+    # plt.figure(figsize=(12, 12))
+
+    # # Plot each polygon
+    # for i, polygon in enumerate(all_polygons):
+    #     # Convert polygon points to numpy for plotting
+    #     points = polygon.detach().numpy()
+
+    #     # Plot polygon outline
+    #     plt.plot(
+    #         points[:, 0],
+    #         points[:, 1],
+    #         "-",
+    #         linewidth=1,
+    #         alpha=0.7,
+    #         # label=f"Polygon {i} (Type: {_polygon_types[polygon_types[i]]})",
+    #     )
+
+    #     # Plot start/end points
+    #     plt.plot(points[0, 0], points[0, 1], "go", markersize=4)  # Start point
+    #     plt.plot(points[-1, 0], points[-1, 1], "ro", markersize=4)  # End point
+
+    # plt.title(f"Map Polygons Visualization\nTotal Polygons: {len(all_polygons)}")
+    # plt.xlabel("X (meters)")
+    # plt.ylabel("Y (meters)")
+    # plt.axis("equal")
+    # plt.grid(True)
+    # # plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+    # plt.tight_layout()
+    # plt.show()
+
+    # Plot map points and their connections to polygons
+    # if len(point_positions) > 0:
+    #     points = torch.cat(point_positions, dim=0).detach().numpy()
+    #     # plt.scatter(
+    #     #     points[:, 0], points[:, 1], c="blue", s=2, alpha=0.5, label="Map Points"
+    #     # )
+
+    #     # Draw connections between points and polygons using edge_index
+    #     if map_data.get(("map_point", "to", "map_polygon")) is not None:
+    #         edge_index = (
+    #             map_data[("map_point", "to", "map_polygon")]["edge_index"]
+    #             .detach()
+    #             .numpy()
+    #         )
+
+    #         # Create a color map for polygons
+    #         num_polygons = len(all_polygons)
+    #         colors = plt.cm.rainbow(np.linspace(0, 1, num_polygons))
+
+    #         for i in range(edge_index.shape[1]):
+    #             point_idx = edge_index[0, i]
+    #             polygon_idx = edge_index[1, i]
+
+    #             # Get point coordinates
+    #             point = points[point_idx]
+
+    #             # Get corresponding polygon
+    #             polygon = all_polygons[polygon_idx]
+    #             # Get all points that belong to this polygon from edge_index
+    #             point_indices = edge_index[0, edge_index[1] == polygon_idx]
+    #             polygon_points = points[point_indices]
+
+    #             # Plot polygon with unique color
+    #             plt.plot(
+    #                 polygon_points[:, 0],
+    #                 polygon_points[:, 1],
+    #                 color=colors[polygon_idx],
+    #                 linewidth=2,
+    #                 alpha=0.7,
+    #             )
+
+    #             # Plot polygon points
+    #             plt.scatter(
+    #                 polygon_points[:, 0],
+    #                 polygon_points[:, 1],
+    #                 color=colors[polygon_idx],
+    #                 s=20,
+    #                 alpha=0.8,
+    #             )
+
+    # plt.title("Map Points and Point-to-Polygon Connections")
+    # plt.xlabel("X (meters)")
+    # plt.ylabel("Y (meters)")
+    # plt.axis("equal")
+    # plt.grid(True)
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.show()
     return map_data
 
 
