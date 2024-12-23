@@ -5,7 +5,7 @@ from trajdata import UnifiedDataset
 
 def main():
     dataset = UnifiedDataset(
-        desired_data=["waymo_val"],
+        desired_data=["nuplan_mini"],
         desired_dt=0.1,
         centric="scene",
         rebuild_cache=True,
@@ -13,8 +13,8 @@ def main():
         num_workers=os.cpu_count(),
         verbose=True,
         data_dirs={  # Remember to change this to match your filesystem!
-            "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",
-            "waymo_val": "/home/haoweis/trajdata_smart/trajdata/data/waymo/",
+            "nuplan_mini": "nuplan/dataset/nuplan-v1.1",
+            # "waymo_val": "/home/haoweis/trajdata_smart/trajdata/data/waymo/",
         },
     )
 

@@ -26,7 +26,7 @@ def main():
         # desired_dt=0.1,
         num_workers=4,
         data_dirs={  # Updated to match demo.py
-            "nuplan_mini": "/home/haoweis/trajdata_smart/trajdata/data/nuplan/dataset/nuplan-v1.1/",  # Changed path
+            "nuplan_mini": "nuplan/dataset/nuplan-v1.1",
         },
     )
 

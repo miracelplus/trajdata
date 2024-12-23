@@ -740,7 +740,8 @@ class UnifiedDataset(Dataset):
         scene: Scene = EnvCache.load(scene_info_path)
         scene_utils.enforce_desired_dt(scene, desired_dt)
 
-        for ts in range(scene.length_timesteps):
+        # for ts in range(scene.length_timesteps):
+        for ts in range(scene.length_timesteps - 1, scene.length_timesteps): # only get the last timestep
             # This is where we remove scene timesteps that would have no remaining agents after filtering.
             if filtering.all_agents_excluded_types(no_types, scene.agent_presence[ts]):
                 continue

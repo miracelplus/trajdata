@@ -14,11 +14,11 @@ from trajdata.visualization.vis import plot_agent_batch
 
 def main():
     dataset = UnifiedDataset(
-        desired_data=["waymo_val"],
-        centric="agent",
+        desired_data=["nuplan_mini"],
+        centric="scene",
         desired_dt=0.1,
-        # history_sec=(3.2, 3.2),
-        # future_sec=(4.8, 4.8),
+        # history_sec=(-float("inf"), None),
+        future_sec=(0, 0),
         only_predict=[AgentType.VEHICLE],
         state_format="x,y,z,xd,yd,h",
         obs_format="x,y,z,xd,yd,s,c",
@@ -40,7 +40,8 @@ def main():
             "incl_ped_walkways": True,
         },
         data_dirs={  # Remember to change this to match your filesystem!
-            "waymo_val": "/home/haoweis/trajdata_smart/trajdata/data/waymo/",
+            # "waymo_val": "/home/haoweis/trajdata_smart/trajdata/data/waymo/",
+            "nuplan_mini": "nuplan/dataset/nuplan-v1.1",
         },
     )
 
@@ -56,16 +57,18 @@ def main():
 
     batch: AgentBatch
     for batch in tqdm(dataloader):
-        plot_agent_batch_interactive(batch, batch_idx=0, cache_path=dataset.cache_path)
-        plot_agent_batch(batch, batch_idx=0)
+        print(batch.scene_ids)
+        # print(batch.agent_name)
+        # plot_agent_batch_interactive(batch, batch_idx=0, cache_path=dataset.cache_path)
+        # plot_agent_batch(batch, batch_idx=0)
 
-        animation = InteractiveAnimation(
-            animate_agent_batch_interactive,
-            batch=batch,
-            batch_idx=0,
-            cache_path=dataset.cache_path,
-        )
-        animation.show()
+        # animation = InteractiveAnimation(
+        #     animate_agent_batch_interactive,
+        #     batch=batch,
+        #     batch_idx=0,
+        #     cache_path=dataset.cache_path,
+        # )
+        # animation.show()
         # break
 
 
