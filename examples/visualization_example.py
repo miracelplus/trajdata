@@ -15,10 +15,10 @@ from trajdata.visualization.vis import plot_agent_batch
 def main():
     dataset = UnifiedDataset(
         desired_data=["nuplan_mini"],
-        centric="scene",
+        centric="agent",
         desired_dt=0.1,
         # history_sec=(-float("inf"), None),
-        future_sec=(0, 0),
+        # future_sec=(0, 0),
         only_predict=[AgentType.VEHICLE],
         state_format="x,y,z,xd,yd,h",
         obs_format="x,y,z,xd,yd,s,c",
@@ -59,16 +59,16 @@ def main():
     for batch in tqdm(dataloader):
         print(batch.scene_ids)
         # print(batch.agent_name)
-        # plot_agent_batch_interactive(batch, batch_idx=0, cache_path=dataset.cache_path)
-        # plot_agent_batch(batch, batch_idx=0)
+        plot_agent_batch_interactive(batch, batch_idx=0, cache_path=dataset.cache_path)
+        plot_agent_batch(batch, batch_idx=0)
 
-        # animation = InteractiveAnimation(
-        #     animate_agent_batch_interactive,
-        #     batch=batch,
-        #     batch_idx=0,
-        #     cache_path=dataset.cache_path,
-        # )
-        # animation.show()
+        animation = InteractiveAnimation(
+            animate_agent_batch_interactive,
+            batch=batch,
+            batch_idx=0,
+            cache_path=dataset.cache_path,
+        )
+        animation.show()
         # break
 
 

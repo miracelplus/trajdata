@@ -488,6 +488,7 @@ def plot_scene_batch(
 
     # Doing this because the imshow above makes the map origin at the top.
     ax.invert_yaxis()
+    plt.savefig("test.png")
 
     if show:
         plt.show()

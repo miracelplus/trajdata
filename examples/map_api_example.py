@@ -27,12 +27,13 @@ def main():
     map_api = MapAPI(cache_path)
 
     ### Loading random scene and initializing VectorMap.
-    env_name: str = np.random.choice(["nusc_mini", "lyft_sample", "nuplan_mini"])
+    # env_name: str = np.random.choice(["nusc_mini", "lyft_sample", "nuplan_mini"])
+    env_name: str = "nuplan_mini"
     scene_cache: Optional[SceneCache] = None
     if env_name == "nuplan_mini":
         # Hardcoding scene_dt = 0.05s for now
         # (using nuPlan as our traffic light data example).
-        random_scene: Scene = load_random_scene(cache_path, env_name, scene_dt=0.05)
+        random_scene: Scene = load_random_scene(cache_path, env_name, scene_dt=0.1)
         scene_cache = DataFrameCache(cache_path, random_scene)
 
         vec_map: VectorMap = map_api.get_map(

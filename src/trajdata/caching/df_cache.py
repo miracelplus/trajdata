@@ -654,6 +654,26 @@ class DataFrameCache(SceneCache):
         tls_data_path: Path = self.scene_dir / DataFrameCache._tls_data_file(desired_dt)
         return tls_data_path.exists()
 
+    def _load_and_interpolate_tls_data(self, desired_dt):
+        """Helper function to load original dt data and interpolate"""
+        tls_orig_dt_df: pd.DataFrame = pd.read_feather(
+            self.scene_dir
+            / DataFrameCache._tls_data_file(self.scene.env_metadata.dt),
+            use_threads=False,
+        ).set_index(["lane_id", "scene_ts"])
+
+        # Interpolate it to the desired dt
+        tls_data_df = df_utils.interpolate_multi_index_df(
+            tls_orig_dt_df, self.scene.env_metadata.dt, desired_dt, method="nearest"
+        )
+
+        # Save it for the future
+        DataFrameCache.save_traffic_light_data(
+            tls_data_df, self.path, self.scene, desired_dt
+        )
+        
+        return tls_data_df
+
     def get_traffic_light_status_dict(
         self, desired_dt: Optional[float] = None
     ) -> Dict[Tuple[str, int], TrafficLightStatus]:
@@ -665,7 +685,8 @@ class DataFrameCache(SceneCache):
         desired_dt = self.dt if desired_dt is None else desired_dt
 
         tls_data_path: Path = self.scene_dir / DataFrameCache._tls_data_file(desired_dt)
-        if not tls_data_path.exists():
+        
+        try:
             # Load the original dt traffic light data
             tls_orig_dt_df: pd.DataFrame = pd.read_feather(
                 self.scene_dir
@@ -682,7 +703,7 @@ class DataFrameCache(SceneCache):
             DataFrameCache.save_traffic_light_data(
                 tls_data_df, self.path, self.scene, desired_dt
             )
-        else:
+        except Exception as e:
             # Load the data with the desired dt.
             tls_data_df: pd.DataFrame = pd.read_feather(
                 tls_data_path,
